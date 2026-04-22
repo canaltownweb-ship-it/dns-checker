@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DNS Checker — Canaltown Digital</title>
+<style>
+  /* ── Reset & Base ────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-900: #0c2340;
+    --blue-700: #14365d;
+    --blue-500: #1a5fa8;
+    --blue-400: #2b7bd4;
+    --blue-100: #dceefb;
+    --orange-500: #e8762b;
+    --orange-600: #d4651e;
+    --orange-100: #fef0e5;
+    --gray-50: #f8f9fb;
+    --gray-100: #eef1f5;
+    --gray-200: #dde2e8;
+    --gray-400: #9aa5b4;
+    --gray-600: #5a6577;
+    --gray-800: #2d3443;
+    --white: #ffffff;
+    --radius: 10px;
+    --shadow-sm: 0 1px 3px rgba(12,35,64,.08);
+    --shadow-md: 0 4px 16px rgba(12,35,64,.10);
+    --shadow-lg: 0 8px 32px rgba(12,35,64,.14);
+    --transition: .2s ease;
+  }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+
+  /* ── Layout Shell ────────────────────────────────── */
+  .app {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 28px 20px 40px;
+  }
+
+  /* ── Header ──────────────────────────────────────── */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .header__brand {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--blue-500);
+    margin-bottom: 4px;
+  }
+  .header__title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--blue-900);
+    margin-bottom: 4px;
+  }
+  .header__sub {
+    font-size: 14px;
+    color: var(--gray-600);
+  }
+
+  /* ── Search Card ─────────────────────────────────── */
+  .search-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    padding: 24px 24px 20px;
+    margin-bottom: 24px;
+  }
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+  .input-row input {
+    flex: 1;
+    height: 46px;
+    padding: 0 16px;
+    font-size: 15px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 8px;
+    outline: none;
+    transition: border var(--transition);
+    color: var(--gray-800);
+  }
+  .input-row input::placeholder { color: var(--gray-400); }
+  .input-row input:focus { border-color: var(--blue-400); }
+  .btn-lookup {
+    height: 46px;
+    padding: 0 26px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--white);
+    background: var(--orange-500);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+    white-space: nowrap;
+  }
+  .btn-lookup:hover { background: var(--orange-600); }
+  .btn-lookup:active { transform: scale(.97); }
+  .btn-lookup:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+  }
+
+  /* ── Record-type Tabs ────────────────────────────── */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1.5px solid var(--gray-200);
+    background: var(--white);
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+  }
+  .tab:hover { border-color: var(--blue-400); color: var(--blue-500); }
+  .tab.active {
+    background: var(--blue-500);
+    border-color: var(--blue-500);
+    color: var(--white);
+  }
+  .tab .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-left: 6px;
+    vertical-align: middle;
+    background: transparent;
+  }
+  .tab.has-data .dot { background: #34c759; }
+  .tab.no-data .dot { background: var(--gray-400); }
+
+  /* ── Results ─────────────────────────────────────── */
+  .results-area {
+    min-height: 80px;
+  }
+  .result-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 16px;
+    animation: fadeUp .3s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .result-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--blue-900);
+    color: var(--white);
+  }
+  .result-card__type {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .result-card__badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,.15);
+  }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .result-table th,
+  .result-table td {
+    text-align: left;
+    padding: 10px 20px;
+    font-size: 13.5px;
+  }
+  .result-table th {
+    background: var(--gray-100);
+    color: var(--gray-600);
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+  }
+  .result-table tr:not(:last-child) td {
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .result-table td {
+    color: var(--gray-800);
+    word-break: break-all;
+  }
+  .ttl-val { color: var(--gray-400); font-size: 12px; }
+
+  /* ── Status / Empty ──────────────────────────────── */
+  .status-msg {
+    text-align: center;
+    padding: 36px 16px;
+    color: var(--gray-400);
+    font-size: 14px;
+  }
+  .status-msg.error { color: #d9534f; }
+  .spinner {
+    display: inline-block;
+    width: 22px; height: 22px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--blue-500);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Footer ──────────────────────────────────────── */
+  .footer {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--gray-400);
+  }
+  .footer a {
+    color: var(--blue-500);
+    text-decoration: none;
+  }
+  .footer a:hover { text-decoration: underline; }
+
+  /* ── Responsive ──────────────────────────────────── */
+  @media (max-width: 540px) {
+    .input-row { flex-direction: column; }
+    .btn-lookup { width: 100%; }
+    .header__title { font-size: 22px; }
+    .result-table th, .result-table td { padding: 8px 14px; font-size: 12.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header__brand">Canaltown Digital</div>
+    <h1 class="header__title">DNS Propagation Checker</h1>
+    <p class="header__sub">Look up A, CNAME, MX, TXT, and NS records for any domain.</p>
+  </div>
+
+  <!-- Search -->
+  <div class="search-card">
+    <div class="input-row">
+      <input id="domainInput" type="text" placeholder="Enter a domain — e.g. example.com" autocomplete="off" spellcheck="false" />
+      <button class="btn-lookup" id="lookupBtn" onclick="runLookup()">Look Up</button>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-type="A">A<span class="dot"></span></button>
+      <button class="tab" data-type="CNAME">CNAME<span class="dot"></span></button>
+      <button class="tab" data-type="MX">MX<span class="dot"></span></button>
+      <button class="tab" data-type="TXT">TXT<span class="dot"></span></button>
+      <button class="tab" data-type="NS">NS<span class="dot"></span></button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-area" id="results">
+    <div class="status-msg">Enter a domain above and click <strong>Look Up</strong> to get started.</div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Powered by <a href="https://canaltowndigital.com" target="_blank" rel="noopener">Canaltown Digital</a> &middot; DNS via Google Public DNS
+  </div>
+
+</div>
+
+<script>
+/* ── State ──────────────────────────────────────── */
+const RECORD_TYPES = ['A','CNAME','MX','TXT','NS'];
+let cache = {};          // { "example.com": { A: [...], MX: [...], ... } }
+let activeType = 'A';
+let currentDomain = '';
+
+/* ── DOM refs ───────────────────────────────────── */
+const domainInput = document.getElementById('domainInput');
+const lookupBtn   = document.getElementById('lookupBtn');
+const tabsEl      = document.getElementById('tabs');
+const resultsEl   = document.getElementById('results');
+
+/* ── Tab switching ──────────────────────────────── */
+tabsEl.addEventListener('click', e => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
+  activeType = btn.dataset.type;
+  tabsEl.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === btn));
+  renderActive();
+});
+
+/* ── Enter-key shortcut ─────────────────────────── */
+domainInput.addEventListener('keydown', e => { if (e.key === 'Enter') runLookup(); });
+
+/* ── Main lookup ────────────────────────────────── */
+async function runLookup() {
+  let domain = domainInput.value.trim().toLowerCase();
+  if (!domain) return;
+
+  // Strip protocol and path
+  domain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  currentDomain = domain;
+
+  // Reset
+  cache[domain] = {};
+  resetTabs();
+  setLoading(true);
+
+  // Query all types in parallel
+  const results = await Promise.allSettled(
+    RECORD_TYPES.map(type => queryDNS(domain, type))
+  );
+
+  results.forEach((res, i) => {
+    const type = RECORD_TYPES[i];
+    if (res.status === 'fulfilled') {
+      cache[domain][type] = res.value;
+    } else {
+      cache[domain][type] = { error: res.reason.message || 'Lookup failed' };
+    }
+  });
+
+  updateTabIndicators(domain);
+  setLoading(false);
+  renderActive();
+}
+
+/* ── Google DoH query ───────────────────────────── */
+async function queryDNS(domain, type) {
+  const url = `https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=${type}`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const json = await resp.json();
+
+  if (json.Status !== 0) {
+    // RCODE meanings
+    const codes = { 1:'Format error', 2:'Server failure', 3:'Non-existent domain (NXDOMAIN)', 5:'Refused' };
+    return { records: [], rcode: json.Status, msg: codes[json.Status] || `RCODE ${json.Status}` };
+  }
+
+  const records = (json.Answer || [])
+    .filter(r => r.type === typeToNum(type))
+    .map(r => ({ name: r.name, data: r.data, ttl: r.TTL }));
+
+  return { records, rcode: 0 };
+}
+
+function typeToNum(t) {
+  return { A:1, CNAME:5, MX:15, TXT:16, NS:2 }[t] || 0;
+}
+
+/* ── Rendering ──────────────────────────────────── */
+function renderActive() {
+  if (!currentDomain || !cache[currentDomain]) {
+    resultsEl.innerHTML = '<div class="status-msg">Enter a domain above and click <strong>Look Up</strong> to get started.</div>';
+    return;
+  }
+  const data = cache[currentDomain][activeType];
+  if (!data) { resultsEl.innerHTML = ''; return; }
+  if (data.error) {
+    resultsEl.innerHTML = `<div class="status-msg error">${esc(data.error)}</div>`;
+    return;
+  }
+  if (data.records.length === 0) {
+    const hint = data.msg ? ` — ${esc(data.msg)}` : '';
+    resultsEl.innerHTML = `<div class="status-msg">No ${activeType} records found for <strong>${esc(currentDomain)}</strong>${hint}</div>`;
+    return;
+  }
+
+  resultsEl.innerHTML = buildTable(activeType, data.records);
+}
+
+function buildTable(type, records) {
+  let cols = '';
+  let rows = '';
+
+  switch (type) {
+    case 'A':
+      cols = '<th>Host</th><th>IP Address</th><th>TTL</th>';
+      rows = records.map(r => `<tr><td>${esc(r.name)}</td><td>${esc(r.data)}</td><td class="ttl-val">${fmtTTL(r.ttl)}</td></tr>`).join('');
+      break;
+    case 'CNAME':
+      cols = '<th>Alias</th><th>Canonical Name</th><th>TTL</th>';
+      rows = records.map(r => `<tr><td>${esc(r.name)}</td><td>${esc(r.data)}</td><td class="ttl-val">${fmtTTL(r.ttl)}</td></tr>`).join('');
+      break;
+    case 'MX':
+      cols = '<th>Host</th><th>Mail Server</th><th>Priority</th><th>TTL</th>';
+      rows = records.map(r => {
+        const parts = r.data.split(/\s+/);
+        const pri = parts.shift();
+        const srv = parts.join(' ');
+        return `<tr><td>${esc(r.name)}</td><td>${esc(srv)}</td><td>${esc(pri)}</td><td class="ttl-val">${fmtTTL(r.ttl)}</td></tr>`;
+      }).join('');
+      break;
+    case 'TXT':
+      cols = '<th>Host</th><th>Value</th><th>TTL</th>';
+      rows = records.map(r => `<tr><td>${esc(r.name)}</td><td>${esc(r.data)}</td><td class="ttl-val">${fmtTTL(r.ttl)}</td></tr>`).join('');
+      break;
+    case 'NS':
+      cols = '<th>Host</th><th>Name Server</th><th>TTL</th>';
+      rows = records.map(r => `<tr><td>${esc(r.name)}</td><td>${esc(r.data)}</td><td class="ttl-val">${fmtTTL(r.ttl)}</td></tr>`).join('');
+      break;
+  }
+
+  return `
+    <div class="result-card">
+      <div class="result-card__header">
+        <span class="result-card__type">${type} Records</span>
+        <span class="result-card__badge">${records.length} record${records.length !== 1 ? 's' : ''}</span>
+      </div>
+      <table class="result-table">
+        <thead><tr>${cols}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ── Helpers ─────────────────────────────────────── */
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function fmtTTL(sec) {
+  if (sec >= 86400) return `${Math.floor(sec/86400)}d ${Math.floor((sec%86400)/3600)}h`;
+  if (sec >= 3600)  return `${Math.floor(sec/3600)}h ${Math.floor((sec%3600)/60)}m`;
+  if (sec >= 60)    return `${Math.floor(sec/60)}m ${sec%60}s`;
+  return `${sec}s`;
+}
+
+function setLoading(on) {
+  lookupBtn.disabled = on;
+  if (on) {
+    resultsEl.innerHTML = '<div class="status-msg"><span class="spinner"></span> Querying DNS records…</div>';
+  }
+}
+
+function resetTabs() {
+  tabsEl.querySelectorAll('.tab').forEach(t => {
+    t.classList.remove('has-data','no-data');
+    t.querySelector('.dot').style.background = 'transparent';
+  });
+}
+
+function updateTabIndicators(domain) {
+  tabsEl.querySelectorAll('.tab').forEach(t => {
+    const type = t.dataset.type;
+    const d = cache[domain]?.[type];
+    if (d && !d.error && d.records?.length > 0) {
+      t.classList.add('has-data');
+      t.classList.remove('no-data');
+    } else {
+      t.classList.add('no-data');
+      t.classList.remove('has-data');
+    }
+  });
+}
+</script>
+</body>
+</html>
